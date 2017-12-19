@@ -27,6 +27,7 @@ pmaddadmin <Player's ID> | Adds a new Admin
 pmremoveadmin <Admin's ID> | Removes an existing Admin
 pmlistadmins | Lists all Admins
 pmclearadmins | Removes all existing Admins
+pmcleardb | Flushes Database
   
 ## In-Game Commands
 All in-game commands are the same as the RCON ones with a "/" in front of it, "pmaddadmin" and "pmremoveadmin" are not available in-game.
@@ -37,6 +38,16 @@ Command  | Function
 /cops | Lists all on-duty cops
 /od or /onduty | Get on-duty as a Police Officer
 /ofd or /offduty | Get off-duty as a Police Officer
+
+## Events (For Developers)
+
+Event's Name  | Event's Arguments | Event's Description
+------------- | ------------- | -------------
+"pm:isAdmin" | int playerSID, string eventName | If player is an Admin, trigger eventName
+"pm:isCop" | int playerSID, string eventName | If player is a Cop, trigger eventName
+"pm:triggerToAllCops" | string eventName | Triggers eventName to all on-duty cops
+"pm:triggerToAllAdmins" | string eventName | Triggers eventName to all admins
+"pm:triggerToAllDepartment" | int departmentID, string eventName | Triggers eventName to all cops from a specific department
 
 ## WIP
 **>** ??? (Send suggestions as Enhancements in [here](https://github.com/DrWyatt/Police-Management/issues)
