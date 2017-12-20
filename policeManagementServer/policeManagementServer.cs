@@ -40,11 +40,11 @@ namespace policeManagementServer
             EventHandlers.Add("chatMessage", new Action<int, int, string, string>(ChatMessage));
 
             //Custom Events
-            EventHandlers.Add("pm:isAdmin", new Action<int, string>(EIsAdmin));
-            EventHandlers.Add("pm:isCop", new Action<int, string>(EIsCop));
-            EventHandlers.Add("pm:triggerToAllCops", new Action<string>(TAllCops));
-            EventHandlers.Add("pm:triggerToAllAdmins", new Action<string>(TAllAdmins));
-            EventHandlers.Add("pm:triggerToAllDepartment", new Action<int, string>(TAllDepartment));
+            EventHandlers.Add("pm:isAdmin", new Action<int, string, string>(EIsAdmin));
+            EventHandlers.Add("pm:isCop", new Action<int, string, string>(EIsCop));
+            EventHandlers.Add("pm:triggerToAllCops", new Action<string, string>(TAllCops));
+            EventHandlers.Add("pm:triggerToAllAdmins", new Action<string, string>(TAllAdmins));
+            EventHandlers.Add("pm:triggerToAllDepartment", new Action<int, string, string>(TAllDepartment));
 
             if (database.Read() == null)
                 ClearDB();
@@ -55,7 +55,7 @@ namespace policeManagementServer
             departments = tuple.Item3;            
         }
 
-        private void TAllDepartment(int depID, string eventName)
+        private void TAllDepartment(int depID, string eventName, string message)
         {
             foreach (Cop cop in cops)
             {
@@ -69,12 +69,17 @@ namespace policeManagementServer
                 if (cop.OnDuty)
                 {
                     if(departments.IndexOf(cop.Department) == depID)
-                        TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                    {
+                        if (message != null)
+                            TriggerClientEvent(GetPlayerFromSID(id), eventName, message);
+                        else
+                            TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                    }
                 }                    
             }
         }
 
-        private void TAllAdmins(string eventName)
+        private void TAllAdmins(string eventName, string message)
         {
             foreach (Admin cop in admins)
             {
@@ -90,11 +95,16 @@ namespace policeManagementServer
 
                 }
                 if (isOn)
-                    TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                {
+                    if (message != null)
+                        TriggerClientEvent(GetPlayerFromSID(id), eventName, message);
+                    else
+                        TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                }
             }
         }
 
-        private void TAllCops(string eventName)
+        private void TAllCops(string eventName, string message)
         {
             foreach (Cop cop in cops)
             {
@@ -105,20 +115,30 @@ namespace policeManagementServer
                         id = Convert.ToInt32(player.Handle);
                 }
                 if (cop.OnDuty)
-                    TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                {
+                    if(message != null)
+                        TriggerClientEvent(GetPlayerFromSID(id), eventName, message);
+                    else
+                        TriggerClientEvent(GetPlayerFromSID(id), eventName);
+                }
+                    
             }
         }
 
-        private void EIsCop(int sourceSID, string eventName)
+        private void EIsCop(int sourceSID, string posEventName, string negEventName)
         {
-            if (IsCop(sourceSID))
-                TriggerClientEvent(eventName);
+            if (IsCop(sourceSID) && GetCopFromID(sourceSID).OnDuty)
+                TriggerClientEvent(posEventName, GetCopFromID(sourceSID).Callsign, departments.IndexOf(GetCopFromID(sourceSID).Department));
+            else
+                TriggerClientEvent(negEventName);
         }
 
-        private void EIsAdmin(int sourceSID, string eventName)
+        private void EIsAdmin(int sourceSID, string posEventName, string negEventName)
         {
             if (IsAdmin(sourceSID))
-                TriggerClientEvent(eventName);
+                TriggerClientEvent(posEventName);
+            else
+                TriggerClientEvent(negEventName);
         }
 
         private void ChatMessage([FromSource]int sourceCID, int sourceSID, string sourceName, string message)
@@ -279,7 +299,7 @@ namespace policeManagementServer
 
         private void RemoveCop(int sourceID, List<dynamic> args, string rawCommand)
         {
-            if (args.Count != 0)
+            if (args.Count == 1)
             {
                 Cop cop = null;
                 if (cops.Count > Convert.ToInt32(args[0]))
@@ -291,10 +311,14 @@ namespace policeManagementServer
                     Debug.WriteLine("Invalid Cop ID!");
                     return;
                 }
+                if (GetPlayerFromHex(cop.Hex) != null)
+                {
+                    TriggerClientEvent(GetPlayerFromHex(cop.Hex), "chatMessage", "", new[] { 255, 0, 0 }, "You are no longer a cop!");
+                }
                 cops.Remove(cop);
                 DatabaseSave();
                 Debug.WriteLine("Cop Deleted!");
-                TriggerClientEvent(GetPlayerFromSID(Convert.ToInt32(args[0])), "chatMessage", "", new[] { 255, 0, 0 }, "You are no longer a cop!");
+                
             }
             else
             {
@@ -305,10 +329,10 @@ namespace policeManagementServer
 
         private void RemoveAdmin(int sourceID, List<dynamic> args, string rawCommand)
         {
-            if (args.Count != 0)
+            if (args.Count == 1)
             {
                 Admin admin = null;
-                if (admins.Count > Convert.ToInt32(args[0]))
+                if (admins.Count >= Convert.ToInt32(args[0]))
                 {
                     admin = admins[Convert.ToInt32(args[0])];
                 }
@@ -317,10 +341,13 @@ namespace policeManagementServer
                     Debug.WriteLine("Invalid Admin ID!");
                     return;
                 }
+                if (GetPlayerFromHex(admin.Hex) != null)
+                {
+                    TriggerClientEvent(GetPlayerFromHex(admin.Hex), "chatMessage", "", new[] { 255, 0, 0 }, "You are no longer an admin!");
+                }                
                 admins.Remove(admin);
                 DatabaseSave();
-                Debug.WriteLine("Admin Deleted!");
-                TriggerClientEvent(GetPlayerFromSID(Convert.ToInt32(args[0])), "chatMessage", "", new[] { 255, 0, 0 }, "You are no longer an admin!");
+                Debug.WriteLine("Admin Deleted!");                
             }
             else
             {
@@ -331,7 +358,7 @@ namespace policeManagementServer
 
         private void RemoveDepartment(int sourceID, List<dynamic> args, string rawCommand)
         {
-            if (args.Count != 0)
+            if (args.Count == 1)
             {
                 Department dep = null;
                 if (departments.Count > Convert.ToInt32(args[0]))
@@ -508,6 +535,17 @@ namespace policeManagementServer
             foreach (Player player in new PlayerList())
             {
                 if (Convert.ToInt32(player.Handle) == id)
+                    playerToReturn = player;
+            }
+            return playerToReturn;
+        }
+
+        private Player GetPlayerFromHex(string id)
+        {
+            Player playerToReturn = null;
+            foreach (Player player in new PlayerList())
+            {
+                if (player.Identifiers.First().ToString() == id)
                     playerToReturn = player;
             }
             return playerToReturn;
