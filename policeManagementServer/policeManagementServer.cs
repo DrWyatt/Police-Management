@@ -53,7 +53,7 @@ namespace policeManagementServer
             //Custom Events
             EventHandlers.Add("pm:isAdmin", new Action<int, string, string>(EIsAdmin));
             EventHandlers.Add("pm:isCop", new Action<int, string, string>(EIsCop));
-            EventHandlers.Add("pm:isFire", new Action<int, string, string>(EIsCop));
+            EventHandlers.Add("pm:isFire", new Action<int, string, string>(EIsFire));
             EventHandlers.Add("pm:triggerToAllCops", new Action<string, List<object>>(TAllCops)); //PD
             EventHandlers.Add("pm:triggerToAllFire", new Action<string, List<object>>(TAllFire)); //FD
             EventHandlers.Add("pm:triggerToAllAdmins", new Action<string, List<object>>(TAllAdmins));
@@ -197,7 +197,6 @@ namespace policeManagementServer
                 }
                 if (isOn)
                 {
-                    Debug.WriteLine("HI");
                     if (args.Count >= 1)
                         TriggerClientEvent(GetPlayerFromSID(id), eventName, args);
                     else
@@ -238,7 +237,7 @@ namespace policeManagementServer
         private void EIsFire(int sourceSID, string posEventName, string negEventName)
         {
             if (IsFire(sourceSID) && GetFireFromID(sourceSID).OnDuty)
-                TriggerClientEvent(posEventName, GetCopFromID(sourceSID).Callsign, departments.IndexOf(GetCopFromID(sourceSID).Department));
+                TriggerClientEvent(posEventName, GetFireFromID(sourceSID).Callsign, fdepartments.IndexOf(GetFireFromID(sourceSID).Department));
             else
                 TriggerClientEvent(negEventName);
         }
@@ -258,15 +257,17 @@ namespace policeManagementServer
             if (splitMessage[0] == "/odc" || splitMessage[0] == "/ondutycop")
             {
                 if (IsCop(sourceSID)){
+                    if (GetFireFromID(sourceSID) != null)
+                        GetFireFromID(sourceSID).OnDuty = false;
                     Cop cop = GetCopFromID(sourceSID);
                     if (cop.OnDuty)
                     {
-                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already on-duty!");
+                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already on-duty as a Police Officer!");
                         CancelEvent();
                         return;
                     }
                     GetCopFromID(sourceSID).OnDuty = true;
-                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now on-duty!");
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now on-duty as a Police Officer!");
                 }
                 else
                 {
@@ -296,15 +297,17 @@ namespace policeManagementServer
             {
                 if (IsFire(sourceSID))
                 {
+                    if (GetCopFromID(sourceSID) != null)
+                        GetCopFromID(sourceSID).OnDuty = false;
                     Firefighter cop = GetFireFromID(sourceSID);
                     if (cop.OnDuty)
                     {
-                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already on-duty!");
+                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already on-duty as a Firefighter!");
                         CancelEvent();
                         return;
                     }
                     GetFireFromID(sourceSID).OnDuty = true;
-                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now on-duty!");
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now on-duty as a Firefighter!");
                 }
                 else
                 {
@@ -377,6 +380,30 @@ namespace policeManagementServer
                     TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "No Cops On-Duty!");
                 }
 
+            }
+            else if (splitMessage[0] == "/funitid")
+            {
+                if(IsFire(sourceSID))
+                {
+                    firefighters[firefighters.IndexOf(GetFireFromID(sourceSID))].Callsign = message.Replace("/funitid ", "");
+                    DatabaseSave();
+                }
+                else
+                {
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Firefighter!");
+                }
+            }
+            else if (splitMessage[0] == "/punitid")
+            {
+                if (IsCop(sourceSID))
+                {
+                    cops[cops.IndexOf(GetCopFromID(sourceSID))].Callsign = message.Replace("/punitid ", "");
+                    DatabaseSave();
+                }
+                else
+                {
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Cop!");
+                }
             }
             CancelEvent();
         }
