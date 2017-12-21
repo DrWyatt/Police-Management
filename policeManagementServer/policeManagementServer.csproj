@@ -48,6 +48,8 @@
     <Compile Include="Cop.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="Department.cs" />
+    <Compile Include="FDepartment.cs" />
+    <Compile Include="Firefighter.cs" />
     <Compile Include="policeManagementServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
