@@ -274,7 +274,7 @@ namespace policeManagementServer
                     TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Police Officer!");
                 }
             }
-            else if (splitMessage[0] == "/ofdc" || splitMessage[0] == "/offdutycop")
+            else if (splitMessage[0] == "/ofd" || splitMessage[0] == "/offduty")
             {
                 if (IsCop(sourceSID))
                 {
@@ -288,9 +288,21 @@ namespace policeManagementServer
                     cop.OnDuty = false;
                     TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now off-duty!");
                 }
+                else if (IsFire(sourceSID))
+                {
+                    Firefighter cop = GetFireFromID(sourceSID);
+                    if (!cop.OnDuty)
+                    {
+                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already off-duty!");
+                        CancelEvent();
+                        return;
+                    }
+                    cop.OnDuty = false;
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now off-duty!");
+                }
                 else
                 {
-                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Police Officer!");
+                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not on-duty!");
                 }
             }
             else if (splitMessage[0] == "/odf" || splitMessage[0] == "/ondutyfire")
@@ -308,25 +320,6 @@ namespace policeManagementServer
                     }
                     GetFireFromID(sourceSID).OnDuty = true;
                     TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now on-duty as a Firefighter!");
-                }
-                else
-                {
-                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Firefighter!");
-                }
-            }
-            else if (splitMessage[0] == "/ofdf" || splitMessage[0] == "/offdutyfire")
-            {
-                if (IsFire(sourceSID))
-                {
-                    Firefighter cop = GetFireFromID(sourceSID);
-                    if (!cop.OnDuty)
-                    {
-                        TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are already off-duty!");
-                        CancelEvent();
-                        return;
-                    }
-                    cop.OnDuty = false;
-                    TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "DISPATCH", new[] { 255, 0, 0 }, "You are now off-duty!");
                 }
                 else
                 {
@@ -405,7 +398,11 @@ namespace policeManagementServer
                     TriggerClientEvent(GetPlayerFromSID(sourceSID), "chatMessage", "", new[] { 255, 0, 0 }, "You are not a Cop!");
                 }
             }
-            CancelEvent();
+            else if (message.StartsWith("/"))
+            {
+                CancelEvent();
+                return;
+            }            
         }
 
 #region CLEAR_THINGS
